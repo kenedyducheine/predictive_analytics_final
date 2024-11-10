@@ -54,18 +54,41 @@ printcp(mod)
 ```
 
 ```{r}
-rp_train <- data.frame(maximum_sustained_wind_knots = train$maximum_sustained_wind_knots)
+rp_train <- data.frame(maximum_sustained_wind_knots = train$maximum_sustained_wind_knots, 
+                        status_of_system = train$status_of_system)
 rp_valid <- data.frame(maximum_sustained_wind_knots = valid$maximum_sustained_wind_knots)
 
 
-classifier1 <- randomForest(x = rp_train,
-                           y = train$status_of_system,
-                           ntree = 50)
+# classifier1 <- randomForest(x = rp_train,
+#                            y = train$status_of_system,
+#                            ntree = 50)
 
-classifier1
+# classifier1
 
-ypred1 <- predict(classifer1, newdata = rp_valid)
+# ypred1 <- predict(classifer1, newdata = rp_valid)
 
-cfm <- confusionMatrix(valid$status_of_system, ypred1)
-cfm
+# cfm <- confusionMatrix(valid$status_of_system, ypred1)
+# cfm
+
+train_ctrl <- trainControl(method="cv", # type of resampling in this case Cross-Validated
+                           number=5, # number of folds
+                           search = "grid" # we are performing a "grid-search"
+                           )
+
+
+model_cv_grid <- train(status_of_system ~ .,
+                       data = rp_train,
+                       method = "rf", # this will use the randomForest::randomForest function
+                       metric = "Accuracy", # which metric should be optimized for 
+                       trControl = train_ctrl, 
+                    #    tuneGrid = grid_rf,
+                       # options to be passed to randomForest
+                       ntree = 741,
+                       keep.forest=TRUE,
+                       importance=TRUE
+                       ) 
+
+model_cv_grid
+
+
 ```
