@@ -1,0 +1,71 @@
+imports
+```{r}
+# install.packages("randomForest")
+# install.packages("xgboost")
+# install.packages("caret")
+# install.packages("gains")
+install.packages("rpart")
+library(randomForest)
+library(xgboost)
+library(caret)
+library(gains)
+library(rpart)
+```
+
+
+```{r}
+data <- read.csv("data/final_project_dataset.csv")
+
+# colnames(data)
+# typeof(data$maximum_sustained_wind_knots)
+# typeof(data$maximum_pressure)
+
+data <- subset(data,
+             select = -c(name, X, index, record_identifier, year.x))
+
+sorted_unique_values <- sort(unique(data$status_of_system))
+
+sorted_unique_values
+
+
+data$status_of_system <- gsub("HU", 1, data$status_of_system)
+data$status_of_system <- gsub("TS", 0, data$status_of_system)
+```
+
+```{r}
+set.seed(11) #mention that this should be normalized across our models
+train_index <- sample(c(1:dim(data)[1]), dim(data)[1] * 0.8)
+valid_index <- setdiff(c(1:dim(data)[1]), train_index)
+
+train <- data[train_index, ]
+valid <- data[valid_index, ]
+head(train)
+```
+
+```{r}
+mod <- rpart(status_of_system ~
+               maximum_pressure + maximum_sustained_wind_knots + date,
+             data = train,
+             cp = 0.00001, minbucket = 100, maxdepth = 7)
+
+
+options(scipen = 10)
+printcp(mod)
+```
+
+```{r}
+rp_train <- data.frame(maximum_sustained_wind_knots = train$maximum_sustained_wind_knots)
+rp_valid <- data.frame(maximum_sustained_wind_knots = valid$maximum_sustained_wind_knots)
+
+
+classifier1 <- randomForest(x = rp_train,
+                           y = train$status_of_system,
+                           ntree = 50)
+
+classifier1
+
+ypred1 <- predict(classifer1, newdata = rp_valid)
+
+cfm <- confusionMatrix(valid$status_of_system, ypred1)
+cfm
+```
