@@ -1,0 +1,140 @@
+
+Logistic Code
+```{r}
+#load packages
+library('caret')
+library('stats')
+#load dataset
+data <- read.csv("final_project_dataset.csv")
+
+#inspect dataset
+head(data)
+summary(data)
+
+#Drop uneeded columns
+data <- data[,-c(1:6)]
+
+#make predicted varible factor
+data$status_of_system <- as.factor(data$status_of_system)
+
+#split for training and test using 60/40 split
+set.seed(1)
+train.index <- sample(c(1:5369), 3221)
+train.set <- data[train.index,]
+valid.set <- data[-train.index,]
+
+##Build logisitic model utilizng Caret##
+
+#set train control for 10 K-fold validation
+
+train.control <- trainControl(
+  method = 'cv',
+  number = 10, #K-Fold 10
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE,
+  verboseIter = TRUE
+)
+
+#set model
+model <- train(
+  status_of_system ~ anomaly + maximum_pressure + maximum_sustained_wind_knots, #test all variables
+  train.set,
+  method = 'glm',
+  trControl = train.control
+)
+
+#see results
+summary(model)
+
+#build confusion matrix to assess accuracy
+predicted_values <- predict(model, valid.set)
+
+#make labels align
+predicted_values <- factor(predicted_values, levels = levels(valid.set$status_of_system))
+true_labels <- factor(valid.set$status_of_system, levels = levels(predicted_values))
+
+con_matrix <- confusionMatrix(predicted_values, valid.set$status_of_system)
+con_matrix
+
+```
+
+Random Forest Code
+```{r}
+data <- subset(data,
+             select = -c(name, X, index, record_identifier, year.x))
+
+sorted_unique_values <- sort(unique(data$status_of_system))
+
+sorted_unique_values
+
+
+data$status_of_system <- gsub("HU", 1, data$status_of_system)
+data$status_of_system <- gsub("TS", 0, data$status_of_system)
+
+set.seed(1) #mention that this should be normalized across our models
+train_index <- sample(c(1:dim(data)[1]), dim(data)[1] * 0.6)
+valid_index <- setdiff(c(1:dim(data)[1]), train_index)
+
+train <- data[train_index, ]
+valid <- data[valid_index, ]
+head(train)
+
+mod <- rpart(status_of_system ~
+               maximum_pressure + maximum_sustained_wind_knots + date,
+             data = train,
+             cp = 0.00001, minbucket = 100, maxdepth = 7)
+
+
+options(scipen = 10)
+printcp(mod)
+
+rp_train <- data.frame(maximum_sustained_wind_knots = train$maximum_sustained_wind_knots,
+                        status_of_system = train$status_of_system,
+                        anomaly = train$anomaly,
+                        maximum_pressure = train$maximum_pressure)
+
+rp_valid <- data.frame(
+                        maximum_sustained_wind_knots = valid$maximum_sustained_wind_knots,
+                        status_of_system = valid$status_of_system,
+                        anomaly = valid$anomaly,
+                        maximum_pressure = valid$maximum_pressure)
+
+
+train_ctrl <- trainControl(method = "cv",
+                           number = 10,
+                           search = "grid")
+
+
+model_cv_grid <- train(status_of_system ~ anomaly + maximum_pressure,
+                       data = rp_train,
+                       method = "rf",
+                       metric = "Accuracy",
+                       trControl = train_ctrl,
+                       ntree = 741,
+                       keep.forest = TRUE,
+                       importance = TRUE)
+
+model_cv_grid
+
+ypred <- predict(model_cv_grid, rp_valid)
+ypred
+
+# ypred <- factor(ypred, levels = levels(rp_valid$status_of_system))
+true_labels <- factor(rp_valid$status_of_system, levels = levels(ypred))
+
+cfm <- confusionMatrix(true_labels, ypred)
+```
+
+logistic
+```{r}
+library(e1071)
+library(kernlab)
+ 
+ 
+svm_model <- train(status_of_system ~., data = train.set, method = "svmRadial",
+                   trControl = trainControl(method = "cv", number = 10),
+                   tunelength = 5)
+svm_predictions <- predict(svm_model, valid.set)
+confusionMatrix(svm_predictions, valid.set$status_of_system)
+
+```
