@@ -58,7 +58,7 @@ con_matrix
 
 ```
 
-Logistic Regression 
+SVM Code
 ```{r}
 library(e1071)
 library(kernlab)
