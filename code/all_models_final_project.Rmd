@@ -58,6 +58,20 @@ con_matrix
 
 ```
 
+Logistic Regression 
+```{r}
+library(e1071)
+library(kernlab)
+ 
+ 
+svm_model <- train(status_of_system ~., data = train.set, method = "svmRadial",
+                   trControl = trainControl(method = "cv", number = 10),
+                   tunelength = 5)
+svm_predictions <- predict(svm_model, valid.set)
+confusionMatrix(svm_predictions, valid.set$status_of_system)
+```
+
+
 Random Forest Code
 ```{r}
 data <- subset(data,
@@ -123,18 +137,4 @@ ypred
 true_labels <- factor(rp_valid$status_of_system, levels = levels(ypred))
 
 cfm <- confusionMatrix(true_labels, ypred)
-```
-
-logistic
-```{r}
-library(e1071)
-library(kernlab)
- 
- 
-svm_model <- train(status_of_system ~., data = train.set, method = "svmRadial",
-                   trControl = trainControl(method = "cv", number = 10),
-                   tunelength = 5)
-svm_predictions <- predict(svm_model, valid.set)
-confusionMatrix(svm_predictions, valid.set$status_of_system)
-
 ```
