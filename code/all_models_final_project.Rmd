@@ -119,7 +119,7 @@ train_ctrl <- trainControl(method = "cv",
                            search = "grid")
 
 
-model_cv_grid <- train(status_of_system ~ anomaly + maximum_pressure,
+model_cv_grid <- train(status_of_system ~ anomaly + maximum_pressure + maximum_sustained_wind_knots,
                        data = rp_train,
                        method = "rf",
                        metric = "Accuracy",
